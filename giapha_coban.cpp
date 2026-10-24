@@ -932,31 +932,31 @@ void menuTheHe() {
 
 
 // Số thế hệ = chiều cao của cây
-int chieuCao(Node* n) {
+int chieuCao(Node* n){
     if (n == NULL) return 0;
-    int hCon = 1 + chieuCao(n->firstChild);    // xuống một thế hệ
-    int hEm = chieuCao(n->nextSibling);        // sang em: cùng thế hệ
+    int hCon = 1 + chieuCao(n->firstChild);    // xuống một thế hệ.
+    int hEm = chieuCao(n->nextSibling);        // sang em: cùng thế hệ.
     if (hCon > hEm) return hCon;
     return hEm;
 }
 
-void demGioiTinh(Node* n, int& nam, int& nu) {
+void demGioiTinh(Node* n, int& nam, int& nu){
     if (n == NULL) return;
     if (n->gender == 'M') nam++;
     else nu++;
     demGioiTinh(n->firstChild, nam, nu);
     demGioiTinh(n->nextSibling, nam, nu);
-}
+} 
 
-void timNamSinhNhoNhat(Node* n, int& namNho) {
+void timNamSinhNhoNhat(Node* n, int& namNho){
     if (n == NULL) return;
     if (n->birthYear < namNho) namNho = n->birthYear;
     timNamSinhNhoNhat(n->firstChild, namNho);
     timNamSinhNhoNhat(n->nextSibling, namNho);
 }
 
-// In tất cả những người sinh năm "nam" (có thể nhiều người trùng năm)
-void inNguoiSinhNam(Node* n, int nam, bool& laDauTien) {
+// In tất cả những người sinh năm "nam" (có thể nhiều người trùng năm).
+void inNguoiSinhNam(Node* n, int nam, bool& laDauTien){
     if (n == NULL) return;
     if (n->birthYear == nam) {
         if (!laDauTien) cout << ", ";
