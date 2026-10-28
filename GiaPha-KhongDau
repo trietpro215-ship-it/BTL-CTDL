@@ -1,0 +1,1132 @@
+// ============================================================
+//  QUAN LY GIA PHA GIA TOC MINI 
+//  Cay da phan bieu dien bang cay nhi phan LCRS
+//     firstChild  = con dau tien
+//     nextSibling = anh/chi/em ke tiep.
+// 
+//  Chi dung kien thuc C++ pho thong: bien, if/for/while, ham,
+//  mang, struct, con tro, de quy, string.
+//  (khong dung vector, auto, nullptr, lambda, STL queue...)
+//  "du lieu mau" hoac "tu nhap gia pha moi".
+#include <iostream>
+#include <string>
+#include <cstdlib>    // atoi, exit
+#include <cctype>     // isalnum, tolower
+#ifdef _WIN32
+#include <windows.h>  // de chinh console hien thi tieng Viet
+#endif
+using namespace std;
+
+const int MAX_NODE = 1000;              // so thanh vien toi da
+const int NAM_NHO_NHAT = 1000;
+const int NAM_LON_NHAT = 2100;
+
+// ------------------------------------------------------------
+// CAU TRUC NUT (dung chung cho ca nhom)
+// ------------------------------------------------------------
+struct Node {
+    string id;           // ma dinh danh (duy nhat)
+    string name;         // ho ten
+    int birthYear;       // nam sinh
+    char gender;         // 'M' = Nam, 'F' = Nu
+    Node* firstChild;    // con dau tien
+    Node* nextSibling;   // anh/chi/em ke tiep
+};
+
+Node* root = NULL;       // NULL nghia la gia pha rong
+
+// ------------------------------------------------------------
+// KHAI BAO TRUOC CAC HAM (de moi nguoi viet phan cua minh
+// theo thu tu nao cung duoc)
+// ------------------------------------------------------------
+// --- PHAN 1
+string catKhoangTrang(string s);
+string docDong(string loiNhac);
+bool laSoNguyen(string s);
+int docSoNguyen(string loiNhac, int nho, int lon);
+bool xacNhan(string cauHoi);
+string tenGioiTinh(char g);
+bool maHopLe(string ma);
+bool tenHopLe(string ten);
+Node* taoNode(string id, string name, int nam, char gt);
+void xoaCay(Node* n);
+Node* timTheoMa(Node* n, string ma);
+Node* timCha(Node* n, Node* dich);
+bool namTrongCayCon(Node* goc, Node* dich);
+int demCon(Node* n);
+int demThanhVien(Node* n);
+void themConCuoi(Node* cha, Node* con);
+void thayTheTrongDanhSach(Node* cha, Node* x, Node* thayThe);
+void tachNode(Node* cha, Node* x);
+Node* hoiThanhVien(string loiNhac);
+void inThongTin(Node* n);
+void taoDuLieuMau();
+void menuKhoiTao();
+void hienHuongDanNhap();
+void hienMenu();
+// --- PHAN 2
+Node* nhapThanhVienMoi(Node* cha);
+void themThanhVien();
+void timTheoTen(Node* n, string tuKhoa, int& soKetQua);
+void timKiem();
+void suaThanhVien();
+void xoaThanhVien();
+// --- PHAN 3
+void chuyenNhanh();
+void themConVaQuanHe();
+void hienThiDanhSachCon();
+void hienThiAnhChiEm();
+void inMoTaQuanHe(int da, int db);
+void traCuuQuanHe();
+// --- PHAN 4
+int tinhTheHe(Node* n, Node* dich, int doSau);
+void dfsDeQuy(Node* n, int doSau);
+void menuDFS();
+void menuBFS();
+Node* timLCA(Node* goc, Node* a, Node* b);
+bool timDuongDi(Node* n, Node* dich, Node* duong[], int& soLuong);
+void menuLCA();
+void menuTheHe();
+// --- PHAN 5
+int chieuCao(Node* n);
+void demGioiTinh(Node* n, int& nam, int& nu);
+void timNamSinhNhoNhat(Node* n, int& namNho);
+void inNguoiSinhNam(Node* n, int nam, bool& laDauTien);
+void thongKe();
+void inCayPhanCap(Node* n, string tienTo, bool laCuoi, bool laGoc);
+int doRongHienThi(string s);
+string soSangChuoi(int v);
+void hienThiBangThanhVien();
+void xuatGiaPha();
+
+
+// Cat khoang trang o dau va cuoi chuoi
+string catKhoangTrang(string s) {
+    int dau = 0;
+    int cuoi = (int)s.length() - 1;
+    while (dau <= cuoi && (s[dau] == ' ' || s[dau] == '\t' || s[dau] == '\r' || s[dau] == '\n'))
+        dau++;
+    while (cuoi >= dau && (s[cuoi] == ' ' || s[cuoi] == '\t' || s[cuoi] == '\r' || s[cuoi] == '\n'))
+        cuoi--;
+    return s.substr(dau, cuoi - dau + 1);
+}
+
+// In loi nhac, doc ca dong, cat khoang trang thua
+string docDong(string loiNhac) {
+    cout << loiNhac;
+    string s;
+    if (!getline(cin, s)) {            // het du lieu nhap
+        cout << "\n(Het du lieu nhap, thoat chuong trinh)\n";
+        exit(0);
+    }
+    return catKhoangTrang(s);
+}
+
+// Chuoi chi gom chu so (va khong rong)?
+bool laSoNguyen(string s) {
+    if (s.length() == 0) return false;
+    for (int i = 0; i < (int)s.length(); i++) {
+        if (s[i] < '0' || s[i] > '9') return false;
+    }
+    return true;
+}
+
+// Doc so nguyen trong doan [nho, lon], nhap sai thi hoi lai
+int docSoNguyen(string loiNhac, int nho, int lon) {
+    while (true) {
+        string s = docDong(loiNhac);
+        if (laSoNguyen(s) && s.length() <= 9) {
+            int v = atoi(s.c_str());
+            if (v >= nho && v <= lon) return v;
+        }
+        cout << "  ! Hay nhap so nguyen tu " << nho << " den " << lon << ".\n";
+    }
+}
+
+bool xacNhan(string cauHoi) {
+    string s = docDong(cauHoi + " (c/k): ");
+    return (s == "c" || s == "C" || s == "y" || s == "Y");
+}
+
+string tenGioiTinh(char g) {
+    if (g == 'M') return "Nam";
+    return "Nu";
+}
+
+// Ma hop le: khong rong, chi gom chu, so, '_' hoac '-', ky tu dau la chu/so
+bool maHopLe(string ma) {
+    if (ma.length() == 0) return false;
+    if (!isalnum((unsigned char)ma[0])) return false;
+    for (int i = 0; i < (int)ma.length(); i++) {
+        unsigned char c = (unsigned char)ma[i];
+        if (!isalnum(c) && c != '_' && c != '-') return false;
+    }
+    return true;
+}
+
+// Ten hop le: khong rong va khong chua dau '|' (vi '|' dung de ngan cach trong tep)
+bool tenHopLe(string ten) {
+    if (ten.length() == 0) return false;
+    if (ten.find('|') != string::npos) return false;
+    return true;
+}
+
+// ---------- Thao tac co ban tren cay LCRS ----------
+
+Node* taoNode(string id, string name, int nam, char gt) {
+    Node* n = new Node;
+    n->id = id;
+    n->name = name;
+    n->birthYear = nam;
+    n->gender = gt;
+    n->firstChild = NULL;
+    n->nextSibling = NULL;
+    return n;
+}
+
+// Giai phong nut n, moi con chau cua n VA cac em ke tiep cua n.
+// Vi vay chi goi khi n da duoc tach khoi danh sach anh em.
+void xoaCay(Node* n) {
+    if (n == NULL) return;
+    xoaCay(n->firstChild);
+    xoaCay(n->nextSibling);
+    delete n;
+}
+
+// Tim theo ma: xet nut nay -> tim o con dau -> tim o em ke tiep
+Node* timTheoMa(Node* n, string ma) {
+    if (n == NULL) return NULL;
+    if (n->id == ma) return n;
+    Node* kq = timTheoMa(n->firstChild, ma);
+    if (kq != NULL) return kq;
+    return timTheoMa(n->nextSibling, ma);
+}
+
+// Tim cha/me cua nut dich (tra ve NULL neu dich la goc)
+Node* timCha(Node* n, Node* dich) {
+    if (n == NULL) return NULL;
+    Node* c;
+    for (c = n->firstChild; c != NULL; c = c->nextSibling) {
+        if (c == dich) return n;          // c la con cua n
+    }
+    for (c = n->firstChild; c != NULL; c = c->nextSibling) {
+        Node* kq = timCha(c, dich);
+        if (kq != NULL) return kq;
+    }
+    return NULL;
+}
+
+// dich co nam trong cay con co goc "goc" khong? (ke ca dich == goc)
+bool namTrongCayCon(Node* goc, Node* dich) {
+    if (goc == NULL) return false;
+    if (goc == dich) return true;
+    for (Node* c = goc->firstChild; c != NULL; c = c->nextSibling) {
+        if (namTrongCayCon(c, dich)) return true;
+    }
+    return false;
+}
+
+// So con truc tiep cua n: di qua con dau roi cac em cua con dau
+int demCon(Node* n) {
+    int dem = 0;
+    for (Node* c = n->firstChild; c != NULL; c = c->nextSibling) dem++;
+    return dem;
+}
+
+// Dem n + toan bo con chau + cac em cua n (toan bo cay LCRS bat dau tu n)
+int demThanhVien(Node* n) {
+    if (n == NULL) return 0;
+    return 1 + demThanhVien(n->firstChild) + demThanhVien(n->nextSibling);
+}
+
+// Them "con" vao CUOI danh sach con cua "cha"
+void themConCuoi(Node* cha, Node* con) {
+    con->nextSibling = NULL;
+    if (cha->firstChild == NULL) {
+        cha->firstChild = con;
+    } else {
+        Node* t = cha->firstChild;
+        while (t->nextSibling != NULL) t = t->nextSibling;
+        t->nextSibling = con;
+    }
+}
+
+// Trong danh sach con cua "cha", thay nut x bang chuoi "thayThe"
+void thayTheTrongDanhSach(Node* cha, Node* x, Node* thayThe) {
+    if (cha->firstChild == x) {
+        cha->firstChild = thayThe;
+    } else {
+        Node* truoc = cha->firstChild;
+        while (truoc != NULL && truoc->nextSibling != x) truoc = truoc->nextSibling;
+        if (truoc != NULL) truoc->nextSibling = thayThe;
+    }
+}
+
+// Tach x (cung con chau cua x) ra khoi danh sach con cua cha
+void tachNode(Node* cha, Node* x) {
+    thayTheTrongDanhSach(cha, x, x->nextSibling);   // anh noi thang sang em cua x
+    x->nextSibling = NULL;
+}
+
+// Hoi ma va tim thanh vien; bao loi neu khong thay
+Node* hoiThanhVien(string loiNhac) {
+    string ma = docDong(loiNhac);
+    Node* n = timTheoMa(root, ma);
+    if (n == NULL) cout << "  ! Khong tim thay thanh vien co ma '" << ma << "'.\n";
+    return n;
+}
+
+void inThongTin(Node* n) {
+    Node* cha = timCha(root, n);
+    cout << "  Ma: " << n->id << " | Ten: " << n->name
+         << " | Nam sinh: " << n->birthYear
+         << " | Gioi tinh: " << tenGioiTinh(n->gender) << "\n";
+    cout << "  Cha/me: ";
+    if (cha == NULL) cout << "(nguoi goc)";
+    else cout << cha->name << " [" << cha->id << "]";
+    cout << " | So con: " << demCon(n)
+         << " | The he: " << tinhTheHe(root, n, 1) << "\n";
+}
+
+// Du lieu mau (khai bao truc tiep trong code): 10 nguoi, 4 the he
+//   G001 (goc) -> G002, G003, G004
+//   G002 -> G005, G006     G003 -> G007, G008     G005 -> G009, G010
+// Moi nguoi duoc tao dung mot lan va gan vao dung mot cha/me.
+void taoDuLieuMau() {
+    xoaCay(root);
+    root = taoNode("G001", "Nguyen Van An", 1940, 'M');
+    Node* g002 = taoNode("G002", "Nguyen Van Binh", 1965, 'M');
+    Node* g003 = taoNode("G003", "Nguyen Thi Lan", 1968, 'F');
+    Node* g004 = taoNode("G004", "Nguyen Van Dung", 1972, 'M');
+    Node* g005 = taoNode("G005", "Nguyen Van Cuong", 1990, 'M');
+    Node* g006 = taoNode("G006", "Nguyen Thi Dao", 1993, 'F');
+    Node* g007 = taoNode("G007", "Tran Van Duc", 1992, 'M');
+    Node* g008 = taoNode("G008", "Tran Thi Em", 1995, 'F');
+    Node* g009 = taoNode("G009", "Nguyen Van Khoa", 2015, 'M');
+    Node* g010 = taoNode("G010", "Nguyen Thi Hoa", 2018, 'F');
+    themConCuoi(root, g002);
+    themConCuoi(root, g003);
+    themConCuoi(root, g004);
+    themConCuoi(g002, g005);
+    themConCuoi(g002, g006);
+    themConCuoi(g003, g007);
+    themConCuoi(g003, g008);
+    themConCuoi(g005, g009);
+    themConCuoi(g005, g010);
+}
+
+// Huong dan nhap thanh vien (hien khi chon tu nhap gia pha moi)
+void hienHuongDanNhap() {
+    cout << "\n========== HUONG DAN NHAP THANH VIEN ==========\n\n";
+    cout << "Moi thanh vien can co cac thong tin:\n";
+    cout << "1. Ma thanh vien: Ma rieng, khong duoc trung.\n";
+    cout << "2. Ho va ten: Nhap day du ho ten.\n";
+    cout << "3. Nam sinh: Nhap nam sinh hop le.\n";
+    cout << "4. Gioi tinh: Chon Nam hoac Nu theo quy uoc cua chuong trinh.\n";
+    cout << "5. Ma cha/me: Nhap ma cua thanh vien cha/me da ton tai.\n\n";
+    cout << "Luu y:\n";
+    cout << "- Thanh vien dau tien se la goc cua gia pha.\n";
+    cout << "- Thanh vien dau tien khong can nhap ma cha/me.\n";
+    cout << "- Tu thanh vien thu hai tro di, can nhap ma cha/me da ton tai.\n";
+    cout << "- Neu nhap sai, chuong trinh phai thong bao va cho nhap lai.\n";
+}
+
+// Menu chon du lieu ban dau khi khoi dong chuong trinh
+//  1: goi taoDuLieuMau() (dung 1 lan) roi hien thi bang thanh vien
+//  2: root = NULL -> cay rong, hien huong dan nhap
+// Khong doc/ghi bat ky tep nao.
+void menuKhoiTao() {
+    cout << "\n========== KHOI TAO GIA PHA ==========\n";
+    cout << "1. Su dung du lieu mau\n";
+    cout << "2. Tu nhap du lieu gia pha moi\n";
+    int chon = docSoNguyen("Lua chon cua ban: ", 1, 2);
+    if (chon == 1) {
+        taoDuLieuMau();
+        cout << "\n";
+        hienThiBangThanhVien();
+    } else {
+        xoaCay(root);          // luc khoi dong root dang la NULL nen khong co gi de xoa
+        root = NULL;           // cay hoan toan rong
+        hienHuongDanNhap();
+    }
+}
+
+void hienMenu() {
+    cout << "\n================ QUAN LY GIA PHA GIA TOC MINI ================\n";
+    cout << " 1. Them thanh vien\n";
+    cout << " 2. Tim kiem thanh vien\n";
+    cout << " 3. Sua thong tin thanh vien\n";
+    cout << " 4. Xoa thanh vien\n";
+    cout << " 5. Them con va thiet lap quan he gia dinh\n";
+    cout << " 6. Hien thi danh sach con\n";
+    cout << " 7. Hien thi anh/chi/em\n";
+    cout << " 8. Duyet cay DFS\n";
+    cout << " 9. Duyet cay BFS\n";
+    cout << "10. Tim to tien chung gan nhat LCA\n";
+    cout << "11. Tra cuu quan he ho hang\n";
+    cout << "12. Tinh bac the he\n";
+    cout << "13. Thong ke gia pha\n";
+    cout << "14. Xuat gia pha dang cay phan cap\n";
+    cout << " 0. Thoat chuong trinh\n";
+    cout << "==============================================================\n";
+}
+
+int main() {
+#ifdef _WIN32
+    SetConsoleOutputCP(65001);   // console Windows hien thi UTF-8
+#endif
+    // Khoi dong: cho nguoi dung chon du lieu mau hoac cay rong
+    menuKhoiTao();
+
+    int chon = -1;
+    while (chon != 0) {
+        hienMenu();
+        chon = docSoNguyen("Chon chuc nang (0-14): ", 0, 14);
+        cout << "\n";
+        switch (chon) {
+            case 1:  themThanhVien();       break;
+            case 2:  timKiem();             break;
+            case 3:  suaThanhVien();        break;
+            case 4:  xoaThanhVien();        break;
+            case 5:  themConVaQuanHe();     break;
+            case 6:  hienThiDanhSachCon();  break;
+            case 7:  hienThiAnhChiEm();     break;
+            case 8:  menuDFS();             break;
+            case 9:  menuBFS();             break;
+            case 10: menuLCA();             break;
+            case 11: traCuuQuanHe();        break;
+            case 12: menuTheHe();           break;
+            case 13: thongKe();             break;
+            case 14: xuatGiaPha();          break;
+            case 0:
+                if (!xacNhan("Thoat chuong trinh? (du lieu chi nam trong bo nho nen se mat)")) chon = -1;   // khong thoat
+                break;
+        }
+    }
+    xoaCay(root);      // tra bo nho truoc khi ket thuc
+    cout << "Tam biet!\n";
+    return 0;
+}
+
+
+// Nhap thong tin mot thanh vien moi; "cha" = NULL neu la nguoi goc.
+// Tra ve NULL neu nguoi dung huy (de trong ma).
+Node* nhapThanhVienMoi(Node* cha) {
+    string id;
+    while (true) {
+        id = docDong("Ma dinh danh (chu/so/_/-, Enter de huy): ");
+        if (id == "") return NULL;
+        if (!maHopLe(id)) {
+            cout << "  ! Ma khong hop le (khong co khoang trang hoac ky tu la).\n";
+        } else if (timTheoMa(root, id) != NULL) {
+            cout << "  ! Ma nay da ton tai, hay chon ma khac.\n";
+        } else {
+            break;
+        }
+    }
+    string ten;
+    while (true) {
+        ten = docDong("Ho ten: ");
+        if (tenHopLe(ten)) break;
+        cout << "  ! Ten khong duoc de trong va khong chua ky tu '|'.\n";
+    }
+    int nam;
+    while (true) {
+        nam = docSoNguyen("Nam sinh: ", NAM_NHO_NHAT, NAM_LON_NHAT);
+        if (cha != NULL && nam <= cha->birthYear) {
+            cout << "  ! Nam sinh phai lon hon nam sinh cua cha/me (" << cha->birthYear << ").\n";
+        } else {
+            break;
+        }
+    }
+    int gt = docSoNguyen("Gioi tinh (1 = Nam, 2 = Nu): ", 1, 2);
+    char kyHieu = 'F';
+    if (gt == 1) kyHieu = 'M';
+    return taoNode(id, ten, nam, kyHieu);
+}
+
+// Chuc nang 1: them thanh vien
+void themThanhVien() {
+    if (demThanhVien(root) >= MAX_NODE) {
+        cout << "  ! Da dat so thanh vien toi da (" << MAX_NODE << ").\n";
+        return;
+    }
+    Node* cha = NULL;
+    if (root == NULL) {
+        cout << "Gia pha dang rong: thanh vien dau tien se la NGUOI GOC.\n";
+    } else {
+        cout << "(Moi nguoi, tru nguoi goc, phai co cha/me trong gia pha)\n";
+        string maCha = docDong("Ma cha/me (Enter de huy): ");
+        if (maCha == "") return;
+        cha = timTheoMa(root, maCha);
+        if (cha == NULL) {
+            cout << "  ! Khong tim thay cha/me co ma '" << maCha << "'.\n";
+            return;
+        }
+    }
+    Node* moi = nhapThanhVienMoi(cha);
+    if (moi == NULL) {
+        cout << "  Da huy.\n";
+        return;
+    }
+    if (cha == NULL) {
+        root = moi;
+        cout << "  => Da tao nguoi goc: " << moi->name << "\n";
+    } else {
+        themConCuoi(cha, moi);
+        cout << "  => Da them " << moi->name << " lam con cua " << cha->name << ".\n";
+    }
+}
+
+// Tim theo ten: in moi thanh vien co ten chua "tuKhoa" (phan biet hoa/thuong)
+void timTheoTen(Node* n, string tuKhoa, int& soKetQua) {
+    if (n == NULL) return;
+    if (n->name.find(tuKhoa) != string::npos) {
+        inThongTin(n);
+        soKetQua++;
+    }
+    timTheoTen(n->firstChild, tuKhoa, soKetQua);
+    timTheoTen(n->nextSibling, tuKhoa, soKetQua);
+}
+
+// Chuc nang 2: tim kiem
+void timKiem() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    int cach = docSoNguyen("Tim theo: 1 = Ma, 2 = Ten : ", 1, 2);
+    if (cach == 1) {
+        string ma = docDong("Nhap ma: ");
+        Node* n = timTheoMa(root, ma);
+        if (n == NULL) cout << "  ! Khong tim thay thanh vien co ma '" << ma << "'.\n";
+        else inThongTin(n);
+    } else {
+        string tuKhoa = docDong("Nhap ten (hoac mot phan ten): ");
+        if (tuKhoa == "") {
+            cout << "  ! Ban chua nhap ten.\n";
+            return;
+        }
+        int soKetQua = 0;
+        timTheoTen(root, tuKhoa, soKetQua);
+        if (soKetQua == 0) cout << "  ! Khong tim thay thanh vien nao.\n";
+        else cout << "  => Tim thay " << soKetQua << " thanh vien.\n";
+    }
+}
+
+// Chuc nang 3: sua thong tin (khong cho sua ma)
+void suaThanhVien() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    Node* n = hoiThanhVien("Ma thanh vien can sua: ");
+    if (n == NULL) return;
+    inThongTin(n);
+    Node* cha = timCha(root, n);
+
+    string s = docDong("Ten moi (Enter = giu nguyen): ");
+    if (s != "") {
+        if (tenHopLe(s)) n->name = s;
+        else cout << "  ! Ten khong hop le, giu nguyen.\n";
+    }
+
+    s = docDong("Nam sinh moi (Enter = giu nguyen): ");
+    if (s != "") {
+        bool hopLe = laSoNguyen(s) && s.length() <= 4;
+        int nam = 0;
+        if (hopLe) {
+            nam = atoi(s.c_str());
+            if (nam < NAM_NHO_NHAT || nam > NAM_LON_NHAT) hopLe = false;
+        }
+        if (hopLe && cha != NULL && nam <= cha->birthYear) hopLe = false;     // phai sau cha/me
+        for (Node* c = n->firstChild; hopLe && c != NULL; c = c->nextSibling) {
+            if (c->birthYear <= nam) hopLe = false;                           // phai truoc cac con
+        }
+        if (hopLe) n->birthYear = nam;
+        else cout << "  ! Nam sinh khong hop le hoac mau thuan voi cha/me - con, giu nguyen.\n";
+    }
+
+    s = docDong("Gioi tinh moi (1 = Nam, 2 = Nu, Enter = giu nguyen): ");
+    if (s == "1") n->gender = 'M';
+    else if (s == "2") n->gender = 'F';
+    else if (s != "") cout << "  ! Lua chon khong hop le, giu nguyen.\n";
+
+    cout << "  => Thong tin sau khi sua:\n";
+    inThongTin(n);
+}
+
+// Chuc nang 4: xoa thanh vien
+// Quy dinh xu ly hau due:
+//   Cach 1: chi xoa nguoi nay, con chau duoc noi len cho cha/me cua nguoi bi xoa
+//   Cach 2: xoa ca nhanh (co hoi xac nhan)
+void xoaThanhVien() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    Node* x = hoiThanhVien("Ma thanh vien can xoa: ");
+    if (x == NULL) return;
+    inThongTin(x);
+    cout << "Cach xoa:\n";
+    cout << "  1 = Chi xoa nguoi nay (con chau duoc noi len cho cha/me cua ho)\n";
+    cout << "  2 = Xoa ca nhanh (nguoi nay va toan bo hau due)\n";
+    int cach = docSoNguyen("Chon: ", 1, 2);
+    Node* cha = timCha(root, x);
+
+    if (cach == 2) {
+        int soNguoi = 1 + demThanhVien(x->firstChild);     // x + toan bo hau due
+        cout << "  Se xoa " << soNguoi << " nguoi.\n";
+        if (!xacNhan("Xac nhan xoa ca nhanh?")) {
+            cout << "  Da huy.\n";
+            return;
+        }
+        if (cha == NULL) {
+            xoaCay(root);
+            root = NULL;
+        } else {
+            tachNode(cha, x);      // tach khoi danh sach anh em truoc
+            xoaCay(x);
+        }
+        cout << "  => Da xoa " << soNguoi << " thanh vien.\n";
+        return;
+    }
+
+    // ----- cach 1 -----
+    if (cha == NULL) {                               // x la nguoi goc
+        if (x->firstChild == NULL) {
+            delete x;
+            root = NULL;
+        } else if (x->firstChild->nextSibling == NULL) {   // goc chi co 1 con
+            Node* moi = x->firstChild;
+            delete x;
+            root = moi;
+            cout << "  (" << moi->name << " tro thanh nguoi goc moi)\n";
+        } else {
+            cout << "  ! Nguoi goc co nhieu con nen khong the chi xoa rieng nguoi goc\n";
+            cout << "    (se tao ra nhieu cay). Hay chon cach 2.\n";
+            return;
+        }
+        cout << "  => Da xoa.\n";
+        return;
+    }
+    if (!xacNhan("Xoa " + x->name + " (con chau chuyen len " + cha->name + ")?")) {
+        cout << "  Da huy.\n";
+        return;
+    }
+    Node* conDau = x->firstChild;
+    Node* emKe = x->nextSibling;
+    Node* thayThe = emKe;
+    if (conDau != NULL) {
+        // noi chuoi con cua x vao truoc em ke tiep cua x
+        Node* cuoi = conDau;
+        while (cuoi->nextSibling != NULL) cuoi = cuoi->nextSibling;
+        cuoi->nextSibling = emKe;
+        thayThe = conDau;
+    }
+    thayTheTrongDanhSach(cha, x, thayThe);
+    delete x;
+    cout << "  => Da xoa; con chau duoc chuyen len lam con cua " << cha->name << ".\n";
+}
+
+
+
+
+// Chuyen mot thanh vien (cung hau due) sang lam con cua nguoi khac
+void chuyenNhanh() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    Node* con = hoiThanhVien("Ma thanh vien can chuyen: ");
+    if (con == NULL) return;
+    Node* chaMoi = hoiThanhVien("Ma cha/me moi: ");
+    if (chaMoi == NULL) return;
+
+    if (con == root) {
+        cout << "  ! Nguoi goc khong the tro thanh con cua ai.\n";
+        return;
+    }
+    if (con == chaMoi) {
+        cout << "  ! Mot nguoi khong the la cha/me cua chinh minh.\n";
+        return;
+    }
+    if (namTrongCayCon(con, chaMoi)) {
+        cout << "  ! Tu choi: " << chaMoi->name << " la hau due cua " << con->name
+             << " nen se tao ra chu trinh.\n";
+        return;
+    }
+    Node* chaCu = timCha(root, con);
+    if (chaCu == chaMoi) {
+        cout << "  ! " << con->name << " da la con cua " << chaMoi->name << ".\n";
+        return;
+    }
+    if (con->birthYear <= chaMoi->birthYear) {
+        cout << "  ! Nam sinh cua con phai lon hon nam sinh cua cha/me moi.\n";
+        return;
+    }
+    tachNode(chaCu, con);        // go khoi cho cu -> khong nam o 2 nhanh
+    themConCuoi(chaMoi, con);
+    cout << "  => Da chuyen " << con->name << " (cung hau due) sang lam con cua "
+         << chaMoi->name << ".\n";
+}
+
+// Chuc nang 5
+void themConVaQuanHe() {
+    cout << "  1 = Tao thanh vien moi lam con\n";
+    cout << "  2 = Chuyen thanh vien da co sang lam con cua nguoi khac\n";
+    int chon = docSoNguyen("Chon: ", 1, 2);
+    if (chon == 1) themThanhVien();
+    else chuyenNhanh();
+}
+
+// Chuc nang 6: danh sach con
+void hienThiDanhSachCon() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    Node* n = hoiThanhVien("Ma cha/me: ");
+    if (n == NULL) return;
+    if (n->firstChild == NULL) {
+        cout << "  " << n->name << " chua co con.\n";
+        return;
+    }
+    cout << "  Con cua " << n->name << " (" << demCon(n) << " nguoi):\n";
+    int stt = 1;
+    for (Node* c = n->firstChild; c != NULL; c = c->nextSibling) {
+        cout << "   " << stt << ". " << c->name << " [" << c->id << "] - "
+             << c->birthYear << ", " << tenGioiTinh(c->gender) << "\n";
+        stt++;
+    }
+}
+
+// Chuc nang 7: anh/chi/em = cac con khac cua cung cha/me
+void hienThiAnhChiEm() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    Node* n = hoiThanhVien("Ma thanh vien: ");
+    if (n == NULL) return;
+    Node* cha = timCha(root, n);
+    if (cha == NULL) {
+        cout << "  " << n->name << " la nguoi goc nen khong co anh/chi/em.\n";
+        return;
+    }
+    int dem = 0;
+    for (Node* c = cha->firstChild; c != NULL; c = c->nextSibling) {
+        if (c == n) continue;                // bo qua chinh minh
+        if (dem == 0)
+            cout << "  Anh/chi/em cua " << n->name << " (cung cha/me " << cha->name << "):\n";
+        cout << "   - " << c->name << " [" << c->id << "] - " << c->birthYear
+             << ", " << tenGioiTinh(c->gender) << "\n";
+        dem++;
+    }
+    if (dem == 0) cout << "  " << n->name << " la con mot (khong co anh/chi/em).\n";
+}
+
+// da, db = so doi tu A (va B) len to tien chung. In "A la ... cua B"
+void inMoTaQuanHe(int da, int db) {
+    if (da == 0 && db == 0) {
+        cout << "cung mot nguoi";
+    } else if (da == 0) {                          // A la to tien cua B
+        if (db == 1) cout << "cha/me";
+        else if (db == 2) cout << "ong/ba";
+        else if (db == 3) cout << "cu";
+        else cout << "to tien (cach " << db << " doi)";
+    } else if (db == 0) {                          // A la hau due cua B
+        if (da == 1) cout << "con";
+        else if (da == 2) cout << "chau";
+        else if (da == 3) cout << "chat";
+        else cout << "hau due (cach " << da << " doi)";
+    } else if (da == 1 && db == 1) {
+        cout << "anh/chi/em (cung cha/me)";
+    } else if (da == 1 && db == 2) {
+        cout << "chu/bac/co/cau/di (anh/chi/em cua cha/me)";
+    } else if (da == 2 && db == 1) {
+        cout << "chau (con cua anh/chi/em)";
+    } else if (da == 2 && db == 2) {
+        cout << "anh/chi/em ho";
+    } else {
+        cout << "ho hang (A cach to tien chung " << da << " doi, B cach " << db << " doi)";
+    }
+}
+
+// Chuc nang 11: tra cuu quan he ho hang giua A va B
+void traCuuQuanHe() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    Node* a = hoiThanhVien("Ma thanh vien A: ");
+    if (a == NULL) return;
+    Node* b = hoiThanhVien("Ma thanh vien B: ");
+    if (b == NULL) return;
+
+    Node* l = timLCA(root, a, b);                 // to tien chung gan nhat
+    Node* duongA[MAX_NODE];
+    Node* duongB[MAX_NODE];
+    int soA = 0, soB = 0;
+    timDuongDi(root, a, duongA, soA);             // duong tu goc den A
+    timDuongDi(root, b, duongB, soB);             // duong tu goc den B
+
+    int theHeL = tinhTheHe(root, l, 1);
+    int da = soA - theHeL;                        // so doi tu A len L
+    int db = soB - theHeL;                        // so doi tu B len L
+
+    cout << "  " << a->name << " la ";
+    inMoTaQuanHe(da, db);
+    cout << " cua " << b->name << ".\n";
+
+    cout << "  Duong quan he: ";
+    int i;
+    for (i = soA - 1; i >= theHeL - 1; i--) {     // tu A di len den L
+        cout << duongA[i]->name;
+        if (i > theHeL - 1) cout << " -> ";
+    }
+    for (i = theHeL; i < soB; i++) {              // tu L di xuong B
+        cout << " -> " << duongB[i]->name;
+    }
+    cout << "\n  (To tien chung gan nhat: " << l->name << ")\n";
+}
+
+
+
+
+// Bac the he cua "dich" (goc = 1).
+//  - di xuong con dau (firstChild): the he + 1
+//  - di sang em ke tiep (nextSibling): CUNG the he
+// Tra ve -1 neu khong thay.
+int tinhTheHe(Node* n, Node* dich, int doSau) {
+    if (n == NULL) return -1;
+    if (n == dich) return doSau;
+    int kq = tinhTheHe(n->firstChild, dich, doSau + 1);
+    if (kq != -1) return kq;
+    return tinhTheHe(n->nextSibling, dich, doSau);   // em: khong tang the he
+}
+
+// DFS tien thu tu: tham nut -> tham con -> tham em
+void dfsDeQuy(Node* n, int doSau) {
+    if (n == NULL) return;
+    cout << string(doSau * 3, ' ') << "- [" << n->id << "] " << n->name
+         << " (" << n->birthYear << ", " << tenGioiTinh(n->gender)
+         << ") - the he " << doSau + 1 << "\n";
+    dfsDeQuy(n->firstChild, doSau + 1);
+    dfsDeQuy(n->nextSibling, doSau);
+}
+
+void menuDFS() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    cout << "--- Duyet DFS (theo chieu sau) ---\n";
+    dfsDeQuy(root, 0);
+}
+
+// BFS: dung hang doi lam bang mang (dau = vi tri lay ra, cuoi = vi tri them vao)
+void menuBFS() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    cout << "--- Duyet BFS (theo the he) ---\n";
+    Node* hang[MAX_NODE];        // hang doi cac nut
+    int mucNut[MAX_NODE];        // the he cua tung nut trong hang doi
+    int dau = 0, cuoi = 0;
+    hang[cuoi] = root;
+    mucNut[cuoi] = 1;
+    cuoi++;
+    int mucHienTai = 0;
+    while (dau < cuoi) {
+        Node* n = hang[dau];     // lay phan tu dau hang doi
+        int muc = mucNut[dau];
+        dau++;
+        if (muc != mucHienTai) { // sang the he moi thi xuong dong
+            if (mucHienTai != 0) cout << "\n";
+            cout << "The he " << muc << ": ";
+            mucHienTai = muc;
+        }
+        cout << n->name << " [" << n->id << "]   ";
+        // day tat ca CON cua n vao hang doi (con dau roi cac em cua con dau)
+        for (Node* c = n->firstChild; c != NULL; c = c->nextSibling) {
+            hang[cuoi] = c;
+            mucNut[cuoi] = muc + 1;
+            cuoi++;
+        }
+    }
+    cout << "\n";
+}
+
+// LCA: to tien chung gan nhat cua a va b (ca hai phai co trong cay).
+// Neu a la to tien cua b thi ket qua la a.
+Node* timLCA(Node* goc, Node* a, Node* b) {
+    if (goc == NULL) return NULL;
+    if (goc == a || goc == b) return goc;
+    Node* ketQua = NULL;
+    int soNhanhThay = 0;
+    for (Node* c = goc->firstChild; c != NULL; c = c->nextSibling) {  // chi xet CON cua goc
+        Node* x = timLCA(c, a, b);
+        if (x != NULL) {
+            soNhanhThay++;
+            ketQua = x;
+        }
+    }
+    if (soNhanhThay >= 2) return goc;    // a, b nam o hai nhanh con khac nhau
+    return ketQua;
+}
+
+// Tim duong di tu n xuong "dich", ghi vao mang duong (de quy quay lui)
+bool timDuongDi(Node* n, Node* dich, Node* duong[], int& soLuong) {
+    duong[soLuong] = n;
+    soLuong++;
+    if (n == dich) return true;
+    for (Node* c = n->firstChild; c != NULL; c = c->nextSibling) {
+        if (timDuongDi(c, dich, duong, soLuong)) return true;
+    }
+    soLuong--;                           // khong dung huong: bo n ra khoi duong di
+    return false;
+}
+
+// Chuc nang 10
+void menuLCA() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    Node* a = hoiThanhVien("Ma thanh vien thu nhat: ");
+    if (a == NULL) return;
+    Node* b = hoiThanhVien("Ma thanh vien thu hai: ");
+    if (b == NULL) return;
+    Node* l = timLCA(root, a, b);
+    if (l == NULL) {
+        cout << "  ! Khong ton tai to tien chung.\n";
+    } else if (a == b) {
+        cout << "  Hai ma la cung mot nguoi: " << a->name << ".\n";
+    } else if (l == a) {
+        cout << "  " << a->name << " la to tien cua " << b->name
+             << " nen LCA chinh la " << l->name << ".\n";
+    } else if (l == b) {
+        cout << "  " << b->name << " la to tien cua " << a->name
+             << " nen LCA chinh la " << l->name << ".\n";
+    } else {
+        cout << "  To tien chung gan nhat cua " << a->name << " va " << b->name
+             << " la: " << l->name << " [" << l->id << "].\n";
+    }
+}
+
+// Chuc nang 12
+void menuTheHe() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    Node* n = hoiThanhVien("Ma thanh vien: ");
+    if (n == NULL) return;
+    int g = tinhTheHe(root, n, 1);
+    cout << "  " << n->name << " thuoc the he " << g;
+    if (g == 1) cout << " (nguoi goc).\n";
+    else cout << " (cach nguoi goc " << g - 1 << " doi).\n";
+}
+
+
+// So the he = chieu cao cua cay
+int chieuCao(Node* n){
+    if (n == NULL) return 0;
+    int hCon = 1 + chieuCao(n->firstChild);    // xuong mot the he.
+    int hEm = chieuCao(n->nextSibling);        // sang em: cung the he.
+    if (hCon > hEm) return hCon;
+    return hEm;
+}
+
+void demGioiTinh(Node* n, int& nam, int& nu){
+    if (n == NULL) return;
+    if (n->gender == 'M') nam++;
+    else nu++;
+    demGioiTinh(n->firstChild, nam, nu);
+    demGioiTinh(n->nextSibling, nam, nu);
+} 
+
+void timNamSinhNhoNhat(Node* n, int& namNho){
+    if (n == NULL) return;
+    if (n->birthYear < namNho) namNho = n->birthYear;
+    timNamSinhNhoNhat(n->firstChild, namNho);
+    timNamSinhNhoNhat(n->nextSibling, namNho);
+}
+
+// In tat ca nhung nguoi sinh nam "nam" (co the nhieu nguoi trung nam).
+void inNguoiSinhNam(Node* n, int nam, bool& laDauTien){
+    if (n == NULL) return;
+    if (n->birthYear == nam) {
+        if (!laDauTien) cout << ", ";
+        cout << n->name << " [" << n->id << "]";
+        laDauTien = false;
+    }
+    inNguoiSinhNam(n->firstChild, nam, laDauTien);
+    inNguoiSinhNam(n->nextSibling, nam, laDauTien);
+}
+
+// Chuc nang 13
+void thongKe() {
+    if (root == NULL) {
+        cout << "  ! Gia pha dang rong.\n";
+        return;
+    }
+    int nam = 0, nu = 0;
+    demGioiTinh(root, nam, nu);
+    int namNho = NAM_LON_NHAT + 1;
+    timNamSinhNhoNhat(root, namNho);
+
+    cout << "--- Thong ke gia pha ---\n";
+    cout << "  Tong so thanh vien : " << demThanhVien(root) << "\n";
+    cout << "  So the he          : " << chieuCao(root) << "\n";
+    cout << "  Nam / Nu           : " << nam << " / " << nu << "\n";
+    cout << "  Nguoi lon tuoi nhat (sinh nam " << namNho << "): ";
+    bool laDauTien = true;
+    inNguoiSinhNam(root, namNho, laDauTien);
+    cout << "\n";
+
+    string ma = docDong("Nhap ma de xem so con truc tiep (Enter = bo qua): ");
+    if (ma != "") {
+        Node* n = timTheoMa(root, ma);
+        if (n == NULL) cout << "  ! Khong tim thay thanh vien co ma '" << ma << "'.\n";
+        else cout << "  " << n->name << " co " << demCon(n) << " con truc tiep.\n";
+    }
+}
+
+// In cay phan cap co thut le
+void inCayPhanCap(Node* n, string tienTo, bool laCuoi, bool laGoc) {
+    cout << tienTo;
+    if (!laGoc) {
+        if (laCuoi) cout << "`-- ";
+        else cout << "|-- ";
+    }
+    cout << n->name << " [" << n->id << "] (" << n->birthYear << ", "
+         << tenGioiTinh(n->gender) << ")\n";
+    string tienToCon = tienTo;
+    if (!laGoc) {
+        if (laCuoi) tienToCon += "    ";
+        else tienToCon += "|   ";
+    }
+    for (Node* c = n->firstChild; c != NULL; c = c->nextSibling) {
+        inCayPhanCap(c, tienToCon, c->nextSibling == NULL, false);
+    }
+}
+
+// So cot hien thi cua chuoi UTF-8: moi ky tu = 1 cot (bo qua byte noi 10xxxxxx)
+// => bang van thang hang khi ten co dau tieng Viet.
+int doRongHienThi(string s) {
+    int dem = 0;
+    for (int i = 0; i < (int)s.length(); i++) {
+        if (((unsigned char)s[i] & 0xC0) != 0x80) dem++;
+    }
+    return dem;
+}
+
+string soSangChuoi(int v) {
+    if (v == 0) return "0";
+    string kq = "";
+    while (v > 0) {
+        kq = string(1, (char)('0' + v % 10)) + kq;
+        v = v / 10;
+    }
+    return kq;
+}
+
+// In mot o: "| " + noi dung + khoang trang bu cho du do rong cot + " "
+void inO(string noiDung, int doRong) {
+    cout << "| " << noiDung << string(doRong - doRongHienThi(noiDung), ' ') << " ";
+}
+
+void inDuongKe(int w1, int w2, int w3, int w4, int w5, int w6) {
+    cout << "+" << string(w1 + 2, '-') << "+" << string(w2 + 2, '-')
+         << "+" << string(w3 + 2, '-') << "+" << string(w4 + 2, '-')
+         << "+" << string(w5 + 2, '-') << "+" << string(w6 + 2, '-') << "+\n";
+}
+
+// Hien thi toan bo thanh vien duoi dang bang ASCII (lay truc tiep tu cay,
+// duyet theo the he bang hang doi mang nen cha luon dung truoc con).
+void hienThiBangThanhVien() {
+    if (root == NULL) {
+        cout << "Gia pha chua co du lieu.\n";
+        cout << "Hay chon chuc nang 1 de them thanh vien dau tien (nguoi goc),\n";
+        cout << "sau do them cac thanh vien khac bang cach nhap ma cha/me.\n";
+        return;
+    }
+    // Buoc 1: BFS de lay danh sach nut va cha/me cua tung nut
+    Node* hang[MAX_NODE];
+    Node* chaNut[MAX_NODE];
+    int dau = 0, cuoi = 0;
+    hang[cuoi] = root;
+    chaNut[cuoi] = NULL;
+    cuoi++;
+    while (dau < cuoi) {
+        Node* n = hang[dau];
+        dau++;
+        for (Node* c = n->firstChild; c != NULL; c = c->nextSibling) {
+            hang[cuoi] = c;
+            chaNut[cuoi] = n;
+            cuoi++;
+        }
+    }
+    int tong = cuoi;
+
+    // Buoc 2: tinh do rong tung cot theo du lieu that (khong thap hon tieu de)
+    int wStt = (int)soSangChuoi(tong).length();
+    if (wStt < 3) wStt = 3;                       // "STT"
+    int wMa = 13;                                  // "Ma thanh vien"
+    int wTen = 9;                                  // "Ho va ten"
+    int wNam = 8;                                  // "Nam sinh"
+    int wGt = 9;                                   // "Gioi tinh"
+    int wCha = 9;                                  // "Ma cha/me"
+    for (int i = 0; i < tong; i++) {
+        int d = doRongHienThi(hang[i]->id);
+        if (d > wMa) wMa = d;
+        if (d > wCha) wCha = d;
+        d = doRongHienThi(hang[i]->name);
+        if (d > wTen) wTen = d;
+    }
+    if (wCha < 8) wCha = 8;                        // "Khong co"
+
+    // Buoc 3: in bang
+    cout << "======================= DANH SACH THANH VIEN GIA PHA =======================\n\n";
+    inDuongKe(wStt, wMa, wTen, wNam, wGt, wCha);
+    inO("STT", wStt);  inO("Ma thanh vien", wMa);  inO("Ho va ten", wTen);
+    inO("Nam sinh", wNam);  inO("Gioi tinh", wGt);  inO("Ma cha/me", wCha);
+    cout << "|\n";
+    inDuongKe(wStt, wMa, wTen, wNam, wGt, wCha);
+    for (int i = 0; i < tong; i++) {
+        Node* n = hang[i];
+        string gt = "Nu";
+        if (n->gender == 'M') gt = "Nam";
+        string maCha = "Khong co";
+        if (chaNut[i] != NULL) maCha = chaNut[i]->id;
+        inO(soSangChuoi(i + 1), wStt);
+        inO(n->id, wMa);
+        inO(n->name, wTen);
+        inO(soSangChuoi(n->birthYear), wNam);
+        inO(gt, wGt);
+        inO(maCha, wCha);
+        cout << "|\n";
+    }
+    inDuongKe(wStt, wMa, wTen, wNam, wGt, wCha);
+    cout << "\nTong so thanh vien: " << tong << "\n";
+}
+
+// Chuc nang 14
+void xuatGiaPha() {
+    if (root == NULL) {
+        hienThiBangThanhVien();      // cay rong: thong bao va huong dan them thanh vien
+        return;
+    }
+    cout << "  1 = Cay phan cap\n";
+    cout << "  2 = Bang danh sach thanh vien\n";
+    int chon = docSoNguyen("Chon: ", 1, 2);
+    if (chon == 1) {
+        cout << "--- GIA PHA ---\n";
+        inCayPhanCap(root, "", true, true);
+    } else {
+        hienThiBangThanhVien();
+    }
+}
