@@ -12,6 +12,4 @@
 //  "dữ liệu mẫu" hoặc "tự nhập gia phả mới".
 //
 //  Biên dịch: g++ giapha_coban.cpp -o giapha   (hoặc bấm F11 trong Dev-C++)
-//  Lưu file ở dạng UTF-8 để hiển thị tiếng Việt.
-//
 // ============================================================
